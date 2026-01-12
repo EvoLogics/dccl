@@ -152,11 +152,21 @@ void dccl::DynamicProtobufManager::enable_disk_source_database()
 }
 
 // DLogMultiFileErrorCollector
-void dccl::DynamicProtobufManager::DLogMultiFileErrorCollector::AddError(
-    const std::string& filename, int line, int column, const std::string& message)
+void dccl::DynamicProtobufManager::DLogMultiFileErrorCollector::RecordError(
+    absl::string_view filename, int line, int column, absl::string_view message)
 {
     std::stringstream ss;
     ss << "File: " << filename << " has error (line: " << line << ", column: " << column
+       << "):" << message;
+
+    throw(dccl::Exception(ss.str()));
+}
+
+void dccl::DynamicProtobufManager::DLogMultiFileErrorCollector::RecordWarning(
+    absl::string_view filename, int line, int column, absl::string_view message)
+{
+    std::stringstream ss;
+    ss << "File: " << filename << " has warning (line: " << line << ", column: " << column
        << "):" << message;
 
     throw(dccl::Exception(ss.str()));

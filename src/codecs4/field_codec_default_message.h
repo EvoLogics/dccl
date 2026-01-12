@@ -51,7 +51,7 @@ class DefaultMessageCodec : public FieldCodecBase
         return manager().find(field_desc, this->codec_version(), has_codec_group(), codec_group());
     }
 
-    bool is_optional() { return this_field() && this_field()->is_optional() && !use_required(); }
+    bool is_optional() { return this_field() && !this_field()->is_required() && !this_field()->is_repeated() && !use_required(); }
 
     void validate() override;
     std::string info() override;

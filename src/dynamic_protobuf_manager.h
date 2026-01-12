@@ -300,8 +300,10 @@ class DynamicProtobufManager
 
     class DLogMultiFileErrorCollector : public google::protobuf::compiler::MultiFileErrorCollector
     {
-        void AddError(const std::string& filename, int line, int column,
-                      const std::string& message) override;
+        virtual void RecordError(absl::string_view filename, int line, int column,
+                                 absl::string_view message);
+        virtual void RecordWarning(absl::string_view filename, int line, int column,
+                                   absl::string_view message);
     };
 
     std::shared_ptr<DLogMultiFileErrorCollector> error_collector_;

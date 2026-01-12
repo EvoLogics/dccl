@@ -26,7 +26,9 @@
 #if DCCL_HAS_LUA
 #include "thirdparty/sol/sol.hpp"
 // symbol in lua-protobuf/pb.c so we can load this using sol's require call
-LUALIB_API int luaopen_pb(lua_State* L);
+extern "C" {
+    LUALIB_API int luaopen_pb(lua_State* L);
+}
 #define SOL_ALL_SAFETIES_ON 1
 #define SOL_PRINT_ERRORS 1
 #endif
