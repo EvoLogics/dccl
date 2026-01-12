@@ -156,12 +156,12 @@ class DefaultMessageCodec : public FieldCodecBase
                 auto parent_oneof_name = field_desc->containing_oneof()->full_name();
 
                 // Calculate the maximum between the field's size and the latest maximum size stored
-                auto new_max_size = std::max(fld_max_size, oneofs_max_size[parent_oneof_name]);
+                auto new_max_size = std::max(fld_max_size, oneofs_max_size[std::string(parent_oneof_name)]);
 
                 // Add the difference between the new and the old max size to the result and store the
                 // new max size
-                *return_value += (new_max_size - oneofs_max_size[parent_oneof_name]);
-                oneofs_max_size[parent_oneof_name] = new_max_size;
+                *return_value += (new_max_size - oneofs_max_size[std::string(parent_oneof_name)]);
+                oneofs_max_size[std::string(parent_oneof_name)] = new_max_size;
             }
         }
 
@@ -172,7 +172,7 @@ class DefaultMessageCodec : public FieldCodecBase
             // Add the bits needed to encode the case enumerator
             *return_value += oneof_size(oneof_desc);
             // Add the maximum size among the fields (0 if not initialised0
-            *return_value += oneofs_max_size[oneof_desc->full_name()];
+            *return_value += oneofs_max_size[std::string(oneof_desc->full_name())];
         }
     };
 
@@ -239,7 +239,7 @@ class DefaultMessageCodec : public FieldCodecBase
             int depth = msg_handler.count();
 
             std::string name =
-                std::to_string(oneof_desc->index()) + ". " + oneof_desc->name() + " [oneof]";
+                std::to_string(oneof_desc->index()) + ". " + std::string(oneof_desc->name()) + " [oneof]";
 
             // Calculate indentation
             const int spaces = 8;

@@ -27,6 +27,7 @@
 // along with DCCL.  If not, see <http://www.gnu.org/licenses/>.
 #include <algorithm>
 #include <utility>
+#include <string>
 
 #include <dlfcn.h> // for shared library loading
 
@@ -331,10 +332,10 @@ std::size_t dccl::Codec::load(const google::protobuf::Descriptor* desc, int user
 
         if (!msg_opt.has_codec_version())
             throw(Exception(
-                "No (dccl.msg).codec_version set for DCCL Message '" + desc->full_name() +
+                "No (dccl.msg).codec_version set for DCCL Message '" + std::string(desc->full_name()) +
                     "'. For new messages, set 'option (dccl.msg).codec_version = 4' in the "
                     "message definition for " +
-                    desc->full_name() + " to use the default DCCL4 codecs.",
+                    std::string(desc->full_name()) + " to use the default DCCL4 codecs.",
                 desc));
 
         std::shared_ptr<FieldCodecBase> codec = manager_.find(desc);
@@ -548,7 +549,7 @@ void dccl::Codec::info(const google::protobuf::Descriptor* desc, std::ostream* p
             std::string message_name;
             if (!omit_id)
                 message_name += std::to_string(dccl_id) + ": ";
-            message_name += desc->full_name() + " {" + hash + "}";
+            message_name += std::string(desc->full_name()) + " {" + hash + "}";
             std::string guard = build_guard_for_console_output(message_name, '=');
             std::string bits_dccl_head_str = "dccl.id head";
             std::string bits_user_head_str = "user head";
