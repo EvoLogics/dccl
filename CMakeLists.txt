@@ -98,7 +98,7 @@ endif()
 set(dccl_EXEC_DIR "${dccl_DEFAULT_EXEC_DIR}" CACHE STRING "Directory where executable DCCL code resides. Change for cross-compilation.")
 
 # symlink these into the build directory for backwards compatibility
-option(ADD_SYMLINKS "Add symlinks to root directory for backwards compatibility." ON)
+option(ADD_SYMLINKS "Add symlinks to root directory for backwards compatibility." OFF)
 if (ADD_SYMLINKS)
   get_filename_component(dccl_FORMER_LIB_DIR lib ABSOLUTE)
   get_filename_component(dccl_FORMER_BIN_DIR bin ABSOLUTE)
