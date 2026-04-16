@@ -1,5 +1,5 @@
 #!/bin/bash
-
+set -e
 if [ -z "${DCCL_CMAKE_FLAGS}" ]; then
     DCCL_CMAKE_FLAGS=
 fi

@@ -6,38 +6,19 @@
 # this project is intended to be built out of source by using 
 # > ./build.sh
 
-cmake_minimum_required(VERSION 3.10 FATAL_ERROR)
-
-# FILE GLOB_RECURSE calls should not follow symlinks by default.
-cmake_policy(SET CMP0009 NEW)
-# MACOSX_RPATH is enabled by default.
-cmake_policy(SET CMP0042 NEW)
+cmake_minimum_required(VERSION 3.25 FATAL_ERROR)
 
 project(dccl)
 
-# boost for units and any (pre C++17)
-find_package(Boost 1.62.0 QUIET)
-if(Boost_FOUND)
-  include_directories(SYSTEM ${Boost_INCLUDE_DIRS})
-endif()
+find_package(Boost REQUIRED COMPONENTS headers)
 
-message("Build host architecture: ${CMAKE_HOST_SYSTEM_PROCESSOR}")
-message("Build target architecture: ${CMAKE_SYSTEM_PROCESSOR}")
+message(STATUS "Build host architecture: ${CMAKE_HOST_SYSTEM_PROCESSOR}")
+message(STATUS "Build target architecture: ${CMAKE_SYSTEM_PROCESSOR}")
 
-if(((NOT DEFINED CMAKE_CXX_STANDARD) OR ("${CMAKE_CXX_STANDARD}" STREQUAL "03") OR ("${CMAKE_CXX_STANDARD}" STREQUAL "11")))
-  if(Boost_FOUND)
-    set(CMAKE_CXX_STANDARD 14)
-    set(CMAKE_CXX_STANDARD_REQUIRED ON)
-    message ("Setting CMAKE_CXX_STANDARD to 14 as required by DCCL (when Boost is available). If you wish to use a newer standard, set CMAKE_CXX_STANDARD directly")
-  else()
-    set(CMAKE_CXX_STANDARD 17)
-    set(CMAKE_CXX_STANDARD_REQUIRED ON)
-    message ("Setting CMAKE_CXX_STANDARD to 17 as required by DCCL (when Boost is not available). If you wish to use a newer standard, set CMAKE_CXX_STANDARD directly. If you wish to use C++14, install Boost (libboost-dev)")
-  endif()
-endif()
+set(CMAKE_CXX_STANDARD 17)
+set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
-## allows us to write custom modules or modifying existing ones
-set(CMAKE_MODULE_PATH "${CMAKE_CURRENT_SOURCE_DIR}/cmake_modules/")
+list(APPEND CMAKE_MODULE_PATH "${CMAKE_CURRENT_SOURCE_DIR}/cmake_modules/")
 
 # enable sanitizers (e.g., Address Sanitizer)
 find_package(Sanitizers)
@@ -45,7 +26,6 @@ find_package(Sanitizers)
 # enable testing (CTest)
 option(enable_testing "Enable building of tests using CTest (if set to ON, you can run tests with 'make test')" OFF)
 if(enable_testing)
-  enable_testing()
   include(CTest)
 endif()
 
@@ -57,9 +37,7 @@ string(REGEX REPLACE "^[0-9]+\\.([0-9]+).*$" "\\1" DCCL_VERSION_MINOR  "${DCCL_V
 string(REGEX REPLACE "^[0-9]+\\.[0-9]+\\.([0-9~a-z]+).*$" "\\1" DCCL_VERSION_PATCH "${DCCL_VERSION_STRING}")
 
 if(EXISTS "${CMAKE_CURRENT_SOURCE_DIR}/.git")
-   message("Compiling in Git source tree.")
-   include(today)
-   today(DCCL_VERSION_DATE)  
+   message(STATUS "Compiling in Git source tree.")
    execute_process(COMMAND git rev-parse --short HEAD
      WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}
      OUTPUT_VARIABLE DCCL_LAST_REV)
@@ -83,15 +61,12 @@ if(EXISTS "${CMAKE_CURRENT_SOURCE_DIR}/.git")
    set(DCCL_VERSION_PATCH "${DCCL_VERSION_PATCH}+${DCCL_REVS_SINCE_TAG}+git${DCCL_LAST_REV}${DCCL_DIRTY_REV_STRING}")
    
 else()
-   message("Compiling from release tarball.")
+   message(STATUS "Compiling from release tarball.")
    set(DCCL_VERSION_DATE "2026.03.25")
 endif()
 
 set(DCCL_VERSION "${DCCL_VERSION_MAJOR}.${DCCL_VERSION_MINOR}.${DCCL_VERSION_PATCH}")
 
-
-include(today)
-today(DCCL_COMPILE_DATE)
 
 # give Dccl 2 series a few more soversions
 set(DCCL_SOVERSION "31")
@@ -109,7 +84,7 @@ get_filename_component(dccl_SHARE_DIR ${dccl_BUILD_DIR}/share ABSOLUTE)
 get_filename_component(dccl_PYTHON_DIR python ABSOLUTE)
 
 if(CMAKE_CROSSCOMPILING)
-  message("DCCL is cross-compiling. Target library architecture: ${CMAKE_LIBRARY_ARCHITECTURE}")
+  message(STATUS "DCCL is cross-compiling. Target library architecture: ${CMAKE_LIBRARY_ARCHITECTURE}")
   find_program(dccl_PROTOC_GEN_EXEC protoc-gen-dccl)
   if(dccl_PROTOC_GEN_EXEC)
     get_filename_component(dccl_DEFAULT_EXEC_DIR ${dccl_PROTOC_GEN_EXEC} DIRECTORY)
@@ -139,8 +114,6 @@ if (ADD_SYMLINKS)
   add_custom_target(share_link ALL DEPENDS ShareLink)
 endif()
 
-set(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG} -Wall") # -fprofile-arcs -ftest-coverage")
-set(CMAKE_C_FLAGS_DEBUG "${CMAKE_C_FLAGS_DEBUG} -Wall") # -fprofile-arcs -ftest-coverage")
 
 ## set type of libraries
 option(make_static_libs "Build static libraries instead of shared." OFF)
@@ -168,26 +141,29 @@ endif()
 
 include(GNUInstallDirs)
 
-install(DIRECTORY ${dccl_SHARE_DIR}/ DESTINATION ${CMAKE_INSTALL_PREFIX}/share/dccl)
+install(DIRECTORY ${dccl_SHARE_DIR}/ DESTINATION ${CMAKE_INSTALL_DATADIR}/dccl)
 
 install(DIRECTORY ${dccl_INC_DIR}/ DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}
   FILES_MATCHING PATTERN  "*.h" PATTERN "*.hpp" PATTERN "*.proto" PATTERN "test*" EXCLUDE)
 
-install(EXPORT dccl-config DESTINATION ${CMAKE_INSTALL_LIBDIR}/cmake/dccl)
+install(EXPORT dccl-targets DESTINATION ${CMAKE_INSTALL_LIBDIR}/cmake/dccl)
 
-message("Installation directories set to: \n\tlibraries: ${CMAKE_INSTALL_FULL_LIBDIR}\n\tbinaries: ${CMAKE_INSTALL_FULL_BINDIR}\n\theaders: ${CMAKE_INSTALL_FULL_INCLUDEDIR}")
+message(STATUS "Installation directories set to: \n\tlibraries: ${CMAKE_INSTALL_FULL_LIBDIR}\n\tbinaries: ${CMAKE_INSTALL_FULL_BINDIR}\n\theaders: ${CMAKE_INSTALL_FULL_INCLUDEDIR}")
 
-## let cmake know where the headers are
-include_directories(${dccl_INC_DIR})
 
-set_directory_properties(PROPERTIES ADDITIONAL_MAKE_CLEAN_FILES
+set_directory_properties(PROPERTIES ADDITIONAL_CLEAN_FILES
   "${dccl_INC_DIR};${dccl_FORMER_BIN_DIR};${dccl_FORMER_LIB_DIR};${dccl_FORMER_INC_DIR};${dccl_FORMER_SHARE_DIR};${dccl_PYTHON_DIR}/dccl/option_extensions_pb2.py;${dccl_SRC_DIR}/share/examples/quickstart_navreport/navreport_pb2.py;${dccl_SRC_DIR}/share/examples/quickstart_navreport/navreport_pb2.pyc"
   )
 
-find_package(ProtobufDCCL REQUIRED)
-include_directories(SYSTEM ${PROTOBUF_INCLUDE_DIRS})
+# CONFIG mode is required so that protobuf's CMake targets carry transitive
+# abseil dependencies.  MODULE_COMPATIBLE enables the legacy variable names
+# (PROTOBUF_INCLUDE_DIRS, PROTOBUF_PROTOC_EXECUTABLE, etc.) used by
+# DCCLProtobufGenerate.
+set(protobuf_MODULE_COMPATIBLE ON CACHE BOOL "" FORCE)
+find_package(Protobuf CONFIG REQUIRED)
+include(DCCLProtobufGenerate)
 
-message("Google Protocol Buffers Version: ${PROTOC_VERSION}")
+message(STATUS "Google Protocol Buffers Version: ${Protobuf_VERSION}")
 
 # optional
 ## cryptopp
@@ -197,7 +173,7 @@ if(CRYPTOPP_FOUND)
   option(enable_cryptography ${CRYPTOPP_DOC_STRING} ON)
 else()
   option(enable_cryptography ${CRYPTOPP_DOC_STRING} OFF)
-  message(">> setting enable_cryptography to OFF ... if you need this functionality: 1) install libcrypto++-dev; 2) run cmake -Denable_cryptography=ON")
+  message(STATUS ">> setting enable_cryptography to OFF ... if you need this functionality: 1) install libcrypto++-dev; 2) run cmake -Denable_cryptography=ON")
 endif()
 
 if(enable_cryptography)
@@ -215,7 +191,7 @@ if(B64_FOUND)
   option(enable_b64 ${B64_DOC_STRING} ON)
 else()
   option(enable_b64 ${B64_DOC_STRING} OFF)
-  message(">> setting enable_b64 to OFF ... if you need this functionality: 1) install libb64-dev; 2) run cmake -Denable_b64=ON")
+  message(STATUS ">> setting enable_b64 to OFF ... if you need this functionality: 1) install libb64-dev; 2) run cmake -Denable_b64=ON")
 endif()
 
 if(enable_b64)
@@ -228,14 +204,7 @@ endif()
 
 
 ## LUA for dynamic conditionals
-find_package(Lua QUIET)
-set(LUA_DOC_STRING "Enable LUA functionality (requires liblua5.3-dev")
-if(LUA_FOUND)
-  option(enable_lua ${LUA_DOC_STRING} ON)
-else()
-  option(enable_lua ${LUA_DOC_STRING} OFF)
-  message(">> setting enable_lua to OFF ... if you need this functionality: 1) install liblua5.3-dev; 2) run cmake -Denable_lua=ON")
-endif()
+option(enable_lua "Enable LUA functionality (requires liblua5.3-dev)" OFF)
 
 if(enable_lua)
   find_package(Lua REQUIRED)
@@ -300,6 +269,8 @@ if(enable_clang_tidy)
 endif()
 
 
+# Directory-scoped: applies to every target in the project (dccl,
+# sub-libraries, tools, tests) without leaking to downstream consumers.
 set(DCCL_DEBUG_OPTIONS -Wall -Wno-sign-compare -Wno-unknown-warning-option)
 add_compile_options("$<$<CONFIG:DEBUG>:${DCCL_DEBUG_OPTIONS}>")
 add_compile_options("$<$<CXX_COMPILER_ID:Clang>:-Wdocumentation>")
@@ -324,3 +295,13 @@ endforeach()
 ## start adding subdirectories
 add_subdirectory(src)
 
+# Generate the package config file last, after all options/variables are set.
+include(CMakePackageConfigHelpers)
+configure_package_config_file(
+  "${CMAKE_CURRENT_SOURCE_DIR}/cmake/dccl-config.cmake.in"
+  "${CMAKE_CURRENT_BINARY_DIR}/dccl-config.cmake"
+  INSTALL_DESTINATION ${CMAKE_INSTALL_LIBDIR}/cmake/dccl
+)
+install(FILES "${CMAKE_CURRENT_BINARY_DIR}/dccl-config.cmake"
+  DESTINATION ${CMAKE_INSTALL_LIBDIR}/cmake/dccl
+)

@@ -39,7 +39,7 @@ add_library(dccl
   ${SRC}
   )
 
-target_link_libraries(dccl ${PROTOBUF_LIBRARIES} ${CMAKE_DL_LIBS} ${CMAKE_THREAD_LIBS_INIT})
+target_link_libraries(dccl protobuf::libprotobuf ${CMAKE_DL_LIBS} Threads::Threads)
 
 if(enable_b64)
   target_link_libraries(dccl ${B64_LIBRARIES})
@@ -59,12 +59,12 @@ endif()
 
 set_target_properties(dccl PROPERTIES VERSION "${DCCL_VERSION}" SOVERSION "${DCCL_SOVERSION}")
 
-set_property(TARGET dccl APPEND PROPERTY INTERFACE_INCLUDE_DIRECTORIES
+target_include_directories(dccl PUBLIC
   $<BUILD_INTERFACE:${dccl_INC_DIR}>
-  $<INSTALL_INTERFACE:${CMAKE_INSTALL_INCLUDEDIR}>  # <prefix>/include
+  $<INSTALL_INTERFACE:${CMAKE_INSTALL_INCLUDEDIR}>
 )
 
-install(TARGETS dccl EXPORT dccl-config
+install(TARGETS dccl EXPORT dccl-targets
    LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR}
    ARCHIVE DESTINATION ${CMAKE_INSTALL_LIBDIR}) 
 
@@ -109,10 +109,16 @@ if(build_native_protobuf)
   endif()
 endif()
 
-export(TARGETS ${DCCL_EXPORT_TARGETS} FILE ${CMAKE_BINARY_DIR}/dccl-config.cmake)
+export(TARGETS ${DCCL_EXPORT_TARGETS} FILE ${CMAKE_BINARY_DIR}/dccl-targets.cmake)
 
 if(enable_testing)
   add_subdirectory(test)
+endif()
+
+# protoc-gen-dccl is a build-time tool needed for proto generation when
+# units are enabled, so build it regardless of the build_apps option.
+if(enable_units AND NOT build_apps)
+  add_subdirectory(apps/pb_plugin)
 endif()
 
 if(build_apps)
