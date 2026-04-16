@@ -36,21 +36,22 @@ string(REGEX REPLACE "^([0-9]+).*$" "\\1" DCCL_VERSION_MAJOR "${DCCL_VERSION_STR
 string(REGEX REPLACE "^[0-9]+\\.([0-9]+).*$" "\\1" DCCL_VERSION_MINOR  "${DCCL_VERSION_STRING}")
 string(REGEX REPLACE "^[0-9]+\\.[0-9]+\\.([0-9~a-z]+).*$" "\\1" DCCL_VERSION_PATCH "${DCCL_VERSION_STRING}")
 
-if(EXISTS "${CMAKE_CURRENT_SOURCE_DIR}/.git")
+find_package(Git)
+if(EXISTS "${CMAKE_CURRENT_SOURCE_DIR}/.git" AND GIT_FOUND)
    message(STATUS "Compiling in Git source tree.")
-   execute_process(COMMAND git rev-parse --short HEAD
+   execute_process(COMMAND ${GIT_EXECUTABLE} rev-parse --short HEAD
      WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}
      OUTPUT_VARIABLE DCCL_LAST_REV)
    string(STRIP ${DCCL_LAST_REV} DCCL_LAST_REV)
 
    string(REPLACE "~" "_" DCCL_GIT_VERSION ${DCCL_VERSION_MAJOR}.${DCCL_VERSION_MINOR}.${DCCL_VERSION_PATCH}) 
 
-   execute_process(COMMAND git rev-list ${DCCL_GIT_VERSION}..HEAD --count
+   execute_process(COMMAND ${GIT_EXECUTABLE} rev-list ${DCCL_GIT_VERSION}..HEAD --count
      WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}
      OUTPUT_VARIABLE DCCL_REVS_SINCE_TAG)
    string(STRIP ${DCCL_REVS_SINCE_TAG} DCCL_REVS_SINCE_TAG)
       
-   execute_process(COMMAND git diff-index --quiet HEAD
+   execute_process(COMMAND ${GIT_EXECUTABLE} diff-index --quiet HEAD
      WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}
      RESULT_VARIABLE DCCL_DIRTY_REV)
    if(DCCL_DIRTY_REV EQUAL 0)
